@@ -1,0 +1,3 @@
+([('create_load_table',
+   '/Users/iamsumitsr/Desktop/Projects/Python/CSVLoaderPostgreSQL/dist/create_load_table',
+   'EXECUTABLE')],)
