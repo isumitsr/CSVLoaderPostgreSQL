@@ -8,11 +8,11 @@ import psycopg2
 def run_script():
     csv_file_path = csv_path_entry.get()
     table_name = table_name_entry.get()
-    
+
     if not csv_file_path or not table_name:
         messagebox.showwarning("Input Error", "Please provide both CSV file path and table name.")
         return
-    
+
     try:
         # Database connection parameters
         conn = psycopg2.connect(
@@ -52,7 +52,7 @@ def run_script():
             # Truncate table if it exists
             truncate_table_query = f"TRUNCATE TABLE {table_name};"
             cursor.execute(truncate_table_query)
-        
+
         conn.commit()
 
         # Loading data into the table
@@ -70,6 +70,7 @@ def run_script():
     except Exception as e:
         # Display error message
         messagebox.showerror("Error", f"An error occurred: {e}")
+
 
 # Create the main window
 app = tk.Tk()
