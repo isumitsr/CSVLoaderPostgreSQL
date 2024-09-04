@@ -89,7 +89,7 @@ def run_script():
         conn.close()
 
         # Display success message
-        messagebox.showinfo("Success", "Data loaded successfully into PostgreSQL. Check projectBloom DB")
+        messagebox.showinfo("Success", f"Data loaded successfully into PostgreSQL. Check {dbname} DB")
 
     except Exception as e:
         # Display error message
