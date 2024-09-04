@@ -1,0 +1,1 @@
+--pyinstaller --onefile --windowed create_load_table.py --onefile 
