@@ -1,9 +1,33 @@
 #!/usr/bin/env python3
 
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import simpledialog, messagebox
 import csv
 import psycopg2
+
+# Function to check the database connection
+def check_db_connection(dbname, user, password, host, port):
+    try:
+        conn = psycopg2.connect(
+            dbname=dbname,
+            user=user,
+            password=password,
+            host=host,
+            port=port
+        )
+        conn.close()
+        return True
+    except Exception as e:
+        return False
+
+# Function to get new database connection details from the user
+def get_db_details():
+    dbname = simpledialog.askstring("Database Info", "Enter database name:", initialvalue="projectBloom")
+    user = simpledialog.askstring("Database Info", "Enter user:", initialvalue="postgres")
+    password = simpledialog.askstring("Database Info", "Enter password:", show='*')
+    host = simpledialog.askstring("Database Info", "Enter host:", initialvalue="localhost")
+    port = simpledialog.askstring("Database Info", "Enter port:", initialvalue="5432")
+    return dbname, user, password, host, port
 
 def run_script():
     csv_file_path = csv_path_entry.get()
@@ -16,11 +40,11 @@ def run_script():
     try:
         # Database connection parameters
         conn = psycopg2.connect(
-            dbname="projectBloom",
-            user="postgres",
-            password="523041",
-            host="localhost",
-            port="5432"
+            dbname=dbname,
+            user=user,
+            password=password,
+            host=host,
+            port=port
         )
         cursor = conn.cursor()
 
@@ -71,10 +95,25 @@ def run_script():
         # Display error message
         messagebox.showerror("Error", f"An error occurred: {e}")
 
-
 # Create the main window
 app = tk.Tk()
 app.title("Data Loader")
+
+# Default database connection details
+dbname = "projectBloom"
+user = "postgres"
+password = "523041"
+host = "localhost"
+port = "5432"
+
+# Check if the default database connection works
+if check_db_connection(dbname, user, password, host, port):
+    use_default = messagebox.askyesno("Database Connection", f"Connection to DB {dbname} , username {user} successful. Do you want to use these credentials?")
+    if not use_default:
+        dbname, user, password, host, port = get_db_details()
+else:
+    messagebox.showwarning("Database Connection", "Could not connect with the default settings. Please provide new connection details.")
+    dbname, user, password, host, port = get_db_details()
 
 # Instructions label
 tk.Label(app, text="Enter CSV file path and table name, then click the button below to load data.").pack(pady=10)
