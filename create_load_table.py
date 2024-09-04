@@ -97,7 +97,7 @@ def run_script():
 
 # Create the main window
 app = tk.Tk()
-app.title("Data Loader")
+app.title("CSV Data Loader")
 
 # Default database connection details
 dbname = "projectBloom"
@@ -131,6 +131,8 @@ table_name_entry.pack(pady=5)
 # Run button
 run_button = tk.Button(app, text="Run", command=run_script)
 run_button.pack(pady=10)
+
+tk.Label(app, text="CSV to PostgreSQL Data Loader \nCreated by Sumit").pack(pady=5)
 
 # Start the GUI event loop
 app.mainloop()
