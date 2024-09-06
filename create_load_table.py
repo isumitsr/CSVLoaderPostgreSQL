@@ -32,6 +32,7 @@ def get_db_details():
 def run_script():
     csv_file_path = csv_path_entry.get()
     table_name = table_name_entry.get()
+    schema_name = schema_name_entry.get() or "public"  # Default schema is 'public'
 
     if not csv_file_path or not table_name:
         messagebox.showwarning("Input Error", "Please provide both CSV file path and table name.")
@@ -53,34 +54,34 @@ def run_script():
             reader = csv.reader(f)
             headers = next(reader)
 
-        # Check if the table exists
+        # Check if the table exists in the specified schema
         cursor.execute(f"""
             SELECT EXISTS (
                 SELECT 1 
                 FROM information_schema.tables 
-                WHERE table_name = '{table_name}'
+                WHERE table_schema = '{schema_name}' AND table_name = '{table_name}'
             );
         """)
         table_exists = cursor.fetchone()[0]
 
         if not table_exists:
-            # Create table if it doesn't exist
+            # Create table in the specified schema if it doesn't exist
             columns = ", ".join([f"{header} TEXT" for header in headers])
             create_table_query = f"""
-                CREATE TABLE {table_name} (
+                CREATE TABLE {schema_name}.{table_name} (
                     {columns}
                 );
             """
             cursor.execute(create_table_query)
         else:
-            # Truncate table if it exists
-            truncate_table_query = f"TRUNCATE TABLE {table_name};"
+            # Truncate table in the specified schema if it exists
+            truncate_table_query = f"TRUNCATE TABLE {schema_name}.{table_name};"
             cursor.execute(truncate_table_query)
 
         conn.commit()
 
-        # Loading data into the table
-        copy_sql = f"COPY {table_name} FROM STDIN WITH CSV HEADER DELIMITER AS ','"
+        # Loading data into the table in the specified schema
+        copy_sql = f"COPY {schema_name}.{table_name} FROM STDIN WITH CSV HEADER DELIMITER AS ','"
         with open(csv_file_path, 'r') as f:
             cursor.copy_expert(sql=copy_sql, file=f)
         conn.commit()
@@ -89,7 +90,10 @@ def run_script():
         conn.close()
 
         # Display success message
-        messagebox.showinfo("Success", f"Data loaded successfully into PostgreSQL. Check {dbname} DB")
+        messagebox.showinfo("Success", f"Data loaded successfully into PostgreSQL. Check {dbname}.{schema_name} schema")
+
+        # Close the application after successful data loading
+        app.quit()
 
     except Exception as e:
         # Display error message
@@ -108,7 +112,7 @@ port = "5432"
 
 # Check if the default database connection works
 if check_db_connection(dbname, user, password, host, port):
-    use_default = messagebox.askyesno("Database Connection", f"Connection to DB {dbname} , username {user} successful. Do you want to use these credentials?")
+    use_default = messagebox.askyesno("Database Connection", f"Connection to DB {dbname}, username {user} successful. Do you want to use these credentials?")
     if not use_default:
         dbname, user, password, host, port = get_db_details()
 else:
@@ -116,7 +120,7 @@ else:
     dbname, user, password, host, port = get_db_details()
 
 # Instructions label
-tk.Label(app, text="Enter CSV file path and table name, then click the button below to load data.").pack(pady=10)
+tk.Label(app, text="Enter CSV file path, table name, and schema (optional), then click the Run button to load data.").pack(pady=10)
 
 # CSV file path entry
 tk.Label(app, text="CSV File Path:").pack(pady=5)
@@ -127,6 +131,11 @@ csv_path_entry.pack(pady=5)
 tk.Label(app, text="Table Name:").pack(pady=5)
 table_name_entry = tk.Entry(app, width=50)
 table_name_entry.pack(pady=5)
+
+# Schema name entry (optional)
+tk.Label(app, text="Schema Name (Optional, default is 'public'):").pack(pady=5)
+schema_name_entry = tk.Entry(app, width=50)
+schema_name_entry.pack(pady=5)
 
 # Run button
 run_button = tk.Button(app, text="Run", command=run_script)
