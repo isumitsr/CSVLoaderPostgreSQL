@@ -1,0 +1,3 @@
+2024-09-10 23:40:02,909 - INFO - Database connection established.
+2024-09-10 23:40:02,944 - INFO - Table public.covid_report truncated.
+2024-09-10 23:40:02,961 - INFO - Data loaded successfully into public.covid_report.

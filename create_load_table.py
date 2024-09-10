@@ -140,17 +140,21 @@ tk.Label(app, text="Enter CSV file path, table name, and schema (optional), then
 
 # CSV file path entry
 tk.Label(app, text="CSV File Path:").pack(pady=5)
-csv_path_entry = tk.Entry(app, width=50)
-csv_path_entry.pack(pady=5)
-csv_browse_button = tk.Button(app, text="Browse", command=select_csv_file)
-csv_browse_button.pack(pady=5)
+csv_frame = tk.Frame(app)
+csv_frame.pack(pady=5)
+
+csv_path_entry = tk.Entry(csv_frame, width=50)
+csv_path_entry.pack(side=tk.LEFT, padx=5)
+
+csv_browse_button = tk.Button(csv_frame, text="Browse", command=select_csv_file)
+csv_browse_button.pack(side=tk.RIGHT, padx=5)
 
 # Table name entry
 tk.Label(app, text="Table Name:").pack(pady=5)
 table_name_entry = tk.Entry(app, width=50)
 table_name_entry.pack(pady=5)
 
-# Schema name entry (optional)
+# Schema name entry
 tk.Label(app, text="Schema Name (Optional, default is 'public'):").pack(pady=5)
 schema_name_entry = tk.Entry(app, width=50)
 schema_name_entry.pack(pady=5)
