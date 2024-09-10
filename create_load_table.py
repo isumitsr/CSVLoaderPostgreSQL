@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 
 import tkinter as tk
-from tkinter import simpledialog, messagebox
+from tkinter import simpledialog, messagebox, filedialog
 import csv
 import psycopg2
+import logging
+import os
+
+# Configure logging
+logging.basicConfig(filename='data_loader.log', level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Function to check the database connection
 def check_db_connection(dbname, user, password, host, port):
@@ -17,7 +23,8 @@ def check_db_connection(dbname, user, password, host, port):
         )
         conn.close()
         return True
-    except Exception as e:
+    except psycopg2.OperationalError as e:
+        logging.error(f"Database connection failed: {e}")
         return False
 
 # Function to get new database connection details from the user
@@ -29,17 +36,29 @@ def get_db_details():
     port = simpledialog.askstring("Database Info", "Enter port:", initialvalue="5432")
     return dbname, user, password, host, port
 
+# Function to select the CSV file
+def select_csv_file():
+    file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
+    if file_path:
+        csv_path_entry.delete(0, tk.END)
+        csv_path_entry.insert(0, file_path)
+
+# Function to run the script
 def run_script():
     csv_file_path = csv_path_entry.get()
     table_name = table_name_entry.get()
-    schema_name = schema_name_entry.get() or "public"  # Default schema is 'public'
+    schema_name = schema_name_entry.get() or "public"
 
     if not csv_file_path or not table_name:
         messagebox.showwarning("Input Error", "Please provide both CSV file path and table name.")
         return
 
+    if not os.path.isfile(csv_file_path):
+        messagebox.showwarning("File Error", "The CSV file does not exist or is not accessible.")
+        return
+
     try:
-        # Database connection parameters
+        # Database connection
         conn = psycopg2.connect(
             dbname=dbname,
             user=user,
@@ -48,55 +67,52 @@ def run_script():
             port=port
         )
         cursor = conn.cursor()
+        logging.info("Database connection established.")
 
         # Reading CSV headers
         with open(csv_file_path, 'r') as f:
             reader = csv.reader(f)
             headers = next(reader)
 
-        # Check if the table exists in the specified schema
+        # Check if the table exists
         cursor.execute(f"""
             SELECT EXISTS (
                 SELECT 1 
                 FROM information_schema.tables 
-                WHERE table_schema = '{schema_name}' AND table_name = '{table_name}'
+                WHERE table_schema = %s AND table_name = %s
             );
-        """)
+        """, (schema_name, table_name))
         table_exists = cursor.fetchone()[0]
 
         if not table_exists:
-            # Create table in the specified schema if it doesn't exist
+            # Create table if it doesn't exist
             columns = ", ".join([f"{header} TEXT" for header in headers])
-            create_table_query = f"""
-                CREATE TABLE {schema_name}.{table_name} (
-                    {columns}
-                );
-            """
+            create_table_query = f"CREATE TABLE {schema_name}.{table_name} ({columns});"
             cursor.execute(create_table_query)
+            logging.info(f"Table {schema_name}.{table_name} created.")
         else:
-            # Truncate table in the specified schema if it exists
+            # Truncate table if it exists
             truncate_table_query = f"TRUNCATE TABLE {schema_name}.{table_name};"
             cursor.execute(truncate_table_query)
+            logging.info(f"Table {schema_name}.{table_name} truncated.")
 
         conn.commit()
 
-        # Loading data into the table in the specified schema
+        # Loading data into the table
         copy_sql = f"COPY {schema_name}.{table_name} FROM STDIN WITH CSV HEADER DELIMITER AS ','"
         with open(csv_file_path, 'r') as f:
             cursor.copy_expert(sql=copy_sql, file=f)
         conn.commit()
+        logging.info(f"Data loaded successfully into {schema_name}.{table_name}.")
 
         cursor.close()
         conn.close()
 
-        # Display success message
         messagebox.showinfo("Success", f"Data loaded successfully into PostgreSQL. Check {dbname}.{schema_name} schema")
-
-        # Close the application after successful data loading
         app.quit()
 
-    except Exception as e:
-        # Display error message
+    except (Exception, psycopg2.DatabaseError) as e:
+        logging.error(f"An error occurred: {e}")
         messagebox.showerror("Error", f"An error occurred: {e}")
 
 # Create the main window
@@ -110,7 +126,7 @@ password = "523041"
 host = "localhost"
 port = "5432"
 
-# Check if the default database connection works
+# Check the default database connection
 if check_db_connection(dbname, user, password, host, port):
     use_default = messagebox.askyesno("Database Connection", f"Connection to DB {dbname}, username {user} successful. Do you want to use these credentials?")
     if not use_default:
@@ -126,6 +142,8 @@ tk.Label(app, text="Enter CSV file path, table name, and schema (optional), then
 tk.Label(app, text="CSV File Path:").pack(pady=5)
 csv_path_entry = tk.Entry(app, width=50)
 csv_path_entry.pack(pady=5)
+csv_browse_button = tk.Button(app, text="Browse", command=select_csv_file)
+csv_browse_button.pack(pady=5)
 
 # Table name entry
 tk.Label(app, text="Table Name:").pack(pady=5)
