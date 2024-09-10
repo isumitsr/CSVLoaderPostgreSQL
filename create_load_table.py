@@ -48,6 +48,7 @@ def run_script():
     csv_file_path = csv_path_entry.get()
     table_name = table_name_entry.get()
     schema_name = schema_name_entry.get() or "public"
+    delimiter = delimiter_var.get()
 
     if not csv_file_path or not table_name:
         messagebox.showwarning("Input Error", "Please provide both CSV file path and table name.")
@@ -71,7 +72,7 @@ def run_script():
 
         # Reading CSV headers
         with open(csv_file_path, 'r') as f:
-            reader = csv.reader(f)
+            reader = csv.reader(f, delimiter=delimiter)
             headers = next(reader)
 
         # Check if the table exists
@@ -99,7 +100,7 @@ def run_script():
         conn.commit()
 
         # Loading data into the table
-        copy_sql = f"COPY {schema_name}.{table_name} FROM STDIN WITH CSV HEADER DELIMITER AS ','"
+        copy_sql = f"COPY {schema_name}.{table_name} FROM STDIN WITH CSV HEADER DELIMITER AS '{delimiter}'"
         with open(csv_file_path, 'r') as f:
             cursor.copy_expert(sql=copy_sql, file=f)
         conn.commit()
@@ -154,10 +155,20 @@ tk.Label(app, text="Table Name:").pack(pady=5)
 table_name_entry = tk.Entry(app, width=50)
 table_name_entry.pack(pady=5)
 
-# Schema name entry
+# Schema name entry (optional)
 tk.Label(app, text="Schema Name (Optional, default is 'public'):").pack(pady=5)
 schema_name_entry = tk.Entry(app, width=50)
 schema_name_entry.pack(pady=5)
+
+# Delimiter selection
+tk.Label(app, text="Select Delimiter:").pack(pady=5)
+delimiter_var = tk.StringVar(value=',')  # Default to comma
+delimiter_frame = tk.Frame(app)
+delimiter_frame.pack(pady=5)
+
+tk.Radiobutton(delimiter_frame, text="Comma (,)", variable=delimiter_var, value=',').pack(side=tk.LEFT)
+tk.Radiobutton(delimiter_frame, text="Pipe (|)", variable=delimiter_var, value='|').pack(side=tk.LEFT)
+tk.Radiobutton(delimiter_frame, text="Tilde (~)", variable=delimiter_var, value='~').pack(side=tk.LEFT)
 
 # Run button
 run_button = tk.Button(app, text="Run", command=run_script)
