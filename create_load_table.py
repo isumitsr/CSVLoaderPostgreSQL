@@ -27,7 +27,7 @@ def check_db_connection(dbname, user, password, host, port):
         logging.error(f"Database connection failed: {e}")
         return False
 
-# Function to get new database connection details from the user
+# Function to get new database connection details from the user input
 def get_db_details():
     dbname = simpledialog.askstring("Database Info", "Enter database name:", initialvalue="projectBloom")
     user = simpledialog.askstring("Database Info", "Enter user:", initialvalue="postgres")
